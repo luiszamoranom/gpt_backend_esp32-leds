@@ -1,0 +1,21 @@
+### Crear una pantalla
+POST http://localhost:9999/pantalla
+Content-Type: application/json
+
+{
+  "nombre": "Pantalla de Luis"
+}
+
+### Actualizar el mensaje de determinada pantalla (por su nombre)
+PATCH http://localhost:9999/pantalla/enviar-mensaje
+Content-Type: application/json
+
+{
+  "id": 1,
+  "mensaje": "MA MA MA MA MANCHANEKE"
+}
+
+### Listar todas las pantallas
+
+GET http://localhost:9999/pantalla
+Content-Type: application/json

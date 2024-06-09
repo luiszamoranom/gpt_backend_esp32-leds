@@ -1,0 +1,25 @@
+### Registrarte como usuario con foto
+POST http://localhost:9999/usuario/registrar
+Content-Type: application/json
+
+{
+  "email": "luis@utalca.cl",
+  "nombre_completo": "Luis Zamorano",
+  "contrasena": "Facilito123",
+  "imagen_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HA6LyAAAAHElEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  "imagen_tipo": "jpg"
+}
+
+### Registrarte como usuario sin foto
+POST http://localhost:9999/usuario/registrar
+Content-Type: application/json
+
+{
+  "email": "luis@utalca.cl",
+  "nombre_completo": "Luis Zamorano",
+  "contrasena": "Facilito123"
+}
+
+### Obtener todos los usuarios
+GET http://localhost:9999/usuario
+Content-Type: application/json

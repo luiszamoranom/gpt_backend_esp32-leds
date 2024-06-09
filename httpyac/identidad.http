@@ -1,0 +1,8 @@
+### Loguearse como usuario
+POST http://localhost:9999/identidad/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "luis@utalca.cl",
+  "contrasena": "Facilito123"
+}
