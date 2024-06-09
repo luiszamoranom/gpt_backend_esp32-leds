@@ -21,12 +21,13 @@ model Usuario {
 }
 
 model Pantalla {
-  id            Int               @id @default(autoincrement())
-  nombre        String            @unique @db.VarChar(20)
-  mensajeActual String?           @db.VarChar(50)
-  habilitada    Boolean           @default(true)
-  createAt      DateTime          @default(now()) @db.Timestamptz
-  usuarios      UsuarioPantalla[]
+  id              Int               @id @default(autoincrement())
+  nombre          String            @unique @db.VarChar(20)
+  mensajeActual   String?           @db.VarChar(50)@default("")
+  mensajeDefecto  String?           @db.VarChar(50)@default("")
+  habilitada      Boolean           @default(true)
+  createAt        DateTime          @default(now()) @db.Timestamptz
+  usuarios        UsuarioPantalla[]
 }
 
 model UsuarioPantalla {
