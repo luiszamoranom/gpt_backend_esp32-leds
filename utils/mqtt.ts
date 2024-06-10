@@ -16,31 +16,21 @@ export const publishMessage = (pantalla:string, mensaje:string) => {
 };
 
 export const scheduleMessage = (jobId:any, dias:string, fechaInicio:any, fecha_hora_inicio:any, 
-    fecha_hora_fin:any, pantalla:string, mensaje:string, animacion:number, fechaFin:any,mensaje_actual:string|null) => {
+    fecha_hora_fin:any, pantalla:string, mensaje:string, animacion:number, fechaFin:any,mensaje_actual:string) => {
 
     const new_msg = mensaje+"&"+String(animacion)
         
-    //SE PUEDE ELEGIR ENTRE TODOS LOS DIAS, LUNES A VIERNES, SÁBADO Y DOMINGO O SELECCIONAR LOS DIAS
+    //SE PUEDE ELEGIR ENTRE TODOS LOS DIAS, LUNES A VIERNES O SÁBADO Y DOMINGO
     let dias_fin = ''
+    let dias_out = ''
     if (dias.includes('Todos los días')){
-        //se setea todos los días a las 8 de la mañana
         dias_fin='*'
     }else if (dias.includes('Lunes a Viernes')){
-        //se setea de lunes a viernes a las 8 de la mañana
         dias_fin='1-5'
+        dias_out='0,6'
     }else if (dias.includes('Sábado y Domingo')){
-        //se setea sabado y domingo a las 8 de la mañana
         dias_fin='0,6'
-    }else{
-        let dias:string = ''
-        dias += dias.includes('Lunes') ? dias += "1" : '';
-        dias += dias.includes('Martes') ? dias += ",2" : '';
-        dias += dias.includes('Miércoles') ? dias += ",3" : '';
-        dias += dias.includes('Jueves') ? dias += ",4" : '';
-        dias += dias.includes('Viernes') ? dias += ",5" : '';
-        dias += dias.includes('Sábado') ? dias += ",6" : '';
-        dias += dias.includes('Domingo') ? dias += ",0" : '';
-        dias_fin = dias[0] == ',' ? dias.substring(1,dias.length) : dias 
+        dias_out='1-5'
     }
     
     let date_start= new Date(Date.now())
@@ -65,10 +55,17 @@ export const scheduleMessage = (jobId:any, dias:string, fechaInicio:any, fecha_h
         })
 
         //este sirve para setear cada dia el mensaje
-        const job1 = schedule.scheduleJob({start:date_start,end:date_end,rule:`* 8 * * * ${dias_fin}`},function() {
+        const job1 = schedule.scheduleJob({start:date_start,end:date_end,rule:`0 8 * * * ${dias_fin}`},function() {
             console.log(new Date(Date.now()),"envia normal:",new_msg)
             publishMessage(pantalla, new_msg);
         })
+        if ( !dias_fin.includes('*') ){
+            const job3 = schedule.scheduleJob({start:date_start,end:date_end,rule:`0 8 * * * ${dias_out}`},function() {
+                console.log(new Date(Date.now()),"envia por defecto cuando no es el dia selec:",new_msg)
+                publishMessage(pantalla, mensaje_actual);
+            })
+        }
+        
 
         //este sirve para indicar cuando se debe volver al mensaje por defecto
         const job2 = schedule.scheduleJob(date_end,function() {
@@ -85,17 +82,17 @@ export const scheduleMessage = (jobId:any, dias:string, fechaInicio:any, fecha_h
 
         console.log("tiene fecha de inicio y no fin")
         console.log("date_start:",date_start)
-        //primero se inicia cuando se indica
+        //primero se inicia cuando se indica, no es necesario setear cada dia ya que quedaria por defecto este
         const job0 = schedule.scheduleJob({start:date_start},function() {
             console.log(new Date(Date.now()),"envia:",new_msg)
             publishMessage(pantalla, new_msg);
         })
 
         //este sirve para setear cada dia el mensaje
-        const job1 = schedule.scheduleJob({start:date_start,rule:`0 8 * * ${dias_fin}`},function() {
-            console.log(new Date(Date.now()),"envia:",new_msg)
-            publishMessage(pantalla, new_msg);
-        })
+        // const job1 = schedule.scheduleJob({start:date_start,rule:`0 8 * * ${dias_fin}`},function() {
+        //     console.log(new Date(Date.now()),"envia:",new_msg)
+        //     publishMessage(pantalla, new_msg);
+        // })
     }
     //no tiene fecha de inicio y menos fin -> es mensaje por defecto
     else {

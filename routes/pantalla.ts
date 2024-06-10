@@ -51,9 +51,10 @@ const schemaMensajeProgramado = Joi.object({
         'number.min': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
         'number.max': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
     }),
-    dias: Joi.string().required().messages({
+    dias: Joi.string().required().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
         'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
-        'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio'
+        'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio',
+        'string.pattern.base': 'Los opciones de dia son: Todos los días, Lunes a Viernes o Sábado y Domingo.'
     }),
     fecha_inicio: Joi.string().allow('').pattern(/^\d{4}-\d{2}-\d{2}$/, 'date').messages({
       'string.pattern.base': 'La fecha de inicio debe estar en el formato yyyy-mm-dd.'
@@ -224,12 +225,26 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
     }
 
-    const pantallaActualizada = await prisma.pantalla.update({
-        where: { id: id },
-        data: { 
-            mensajeActual: mensaje+"&"+String(animacion)
-        },
-    });
+    //si posee fecha final no quedaria por defecto
+    if (fechaFinDate){
+        const pantallaActualizada = await prisma.pantalla.update({
+            where: { id: id },
+            data: { 
+                mensajeActual: mensaje+"&"+String(animacion)
+            },
+        });
+    }
+    //como NO tiene fecha final pasaria un por defecto que simplemente se programa
+    else{
+        const pantallaActualizada = await prisma.pantalla.update({
+            where: { id: id },
+            data: { 
+                mensajeActual: mensaje+"&"+String(animacion),
+                mensajeDefecto: mensaje+"&"+String(animacion)
+            },
+        });
+    }
+   
 
     return res
         .status(200)
