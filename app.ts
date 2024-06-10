@@ -6,6 +6,7 @@ import cors from 'cors'
 import usuarioRoute from './routes/usuarios';
 import identidadRoute from './routes/identidad'
 import pantallaRoute from './routes/pantalla'
+import usuarioPantallaRoute from './routes/usuario_pantalla'
 
 export const app = express();
 const PORT = 9999
@@ -21,6 +22,7 @@ app.use(express.json({limit: '2mb'}));
 app.use("/usuario", usuarioRoute);
 app.use("/identidad", identidadRoute);
 app.use("/pantalla", pantallaRoute);
+app.use("/usuario-pantalla", usuarioPantallaRoute);
 
 app.get("/ping", async (req, res) => {
     res.send( {data: "pong"})
