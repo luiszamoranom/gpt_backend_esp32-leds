@@ -17,9 +17,13 @@ const schemaAsociarUsuarioPantalla = Joi.object({
     pantalla_id : Joi.number().required().min(1)
 });
 
+//OBTENER PANTALLAS DE UN USUARIO
 router.get('/asociacion-by-usuario', async (req,res) => {
     const id = req.query.id as string;
     const { error } = schemaBuscarPorId.validate({id:id});
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
 
     const usuario = await prisma.usuario.findUnique({
         where: { id: req.body.usuario_id }
@@ -51,6 +55,7 @@ router.get('/asociacion-by-usuario', async (req,res) => {
     }
 });
 
+//ASOCIAR UN USUARIO A UNA PANTALLA
 router.post('', async (req,res) => {
     const { error } = schemaAsociarUsuarioPantalla.validate(req.body);
     if (error) {
@@ -105,6 +110,7 @@ router.post('', async (req,res) => {
     return res.status(409).end();
 });
 
+//QUITAR ASOCIACION USUARIO-PANTALLA 
 router.delete('', async (req,res) => {
     const { error } = schemaAsociarUsuarioPantalla.validate(req.body);
     if (error) {
