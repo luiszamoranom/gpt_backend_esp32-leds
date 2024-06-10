@@ -148,8 +148,10 @@ router.delete('', async (req,res) => {
     const usuario_id:number = req.body.usuario_id
     const desasociar = await prisma.usuarioPantalla.delete({
         where: {
-            pantallaId:pantalla_id,
-            usuarioId:usuario_id
+            usuarioId_pantallaId: {
+              usuarioId: usuario_id,
+              pantallaId: pantalla_id
+            }
         }
     })
     if (desasociar){
