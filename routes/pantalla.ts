@@ -53,8 +53,8 @@ const schemaMensajeProgramado = Joi.object({
         'number.min': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
         'number.max': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
     }),
-    dias: Joi.string().required().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
-        'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
+    dias: Joi.string().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
+        //'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
         'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio',
         'string.pattern.base': 'Los opciones de dia son: Todos los días, Lunes a Viernes o Sábado y Domingo.'
     }),
@@ -69,8 +69,33 @@ const schemaMensajeProgramado = Joi.object({
     }),
     fecha_fin:Joi.string().allow('').pattern(/^\d{4}-\d{2}-\d{2}$/, 'date').messages({
         'string.pattern.base': 'La fecha de inicio debe estar en el formato yyyy-mm-dd.'
+    })
+});
+const schemaMensajeConTiempo = Joi.object({
+    id: Joi.number().required().messages({
+        'number.base': 'El id debe ser un número.',
+        'number.positive': 'El id debe ser un número positivo.',
+        'any.required': 'El campo id es requerido.'
     }),
-    tiempo_actividad:Joi.number().positive().min(5).max(50400).messages({
+    mensaje: Joi.string().required().min(3).max(50).pattern(/^[^&]*$/, 'no &').messages({
+        'any.required': 'mensaje, campo que registra el mensaje es obligatorio',
+        'string.empty': 'mensaje, campo que registra el mensaje, no puede estar vacio',
+        'string.min': 'mensaje, campo que registra el mensaje, debe tener un largo mínimo de 3 caracteres',
+        'string.max': 'mensaje, campo que registra el mensaje, debe tener un largo máximo de 50 caracteres',
+        'string.pattern.base': 'mensaje, campo que registra el mensaje, no puede contener el carácter "&"',
+    }),
+    animacion: Joi.number().required().min(0).max(10).messages({
+        'any.required': 'animacion, campo que registra el tipo de animación, es obligatorio',
+        'number.min': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
+        'number.max': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
+    }),
+    fecha_inicio: Joi.string().required().allow('').pattern(/^\d{4}-\d{2}-\d{2}$/, 'date').messages({
+      'string.pattern.base': 'La fecha de inicio debe estar en el formato yyyy-mm-dd.'
+    }),
+    hora_inicio:Joi.string().required().allow('').pattern(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'time').messages({
+      'string.pattern.base': 'La hora de inicio debe estar en el formato HH:MM.'
+    }),
+    tiempo_actividad:Joi.number().required().positive().min(5).max(50400).messages({
       'number.base': 'El tiempo debe ser un número.',
       'number.positive': 'El tiempo debe ser un número positivo.',
       'number.min': 'El tiempo debe superar los 5 segundos.',
@@ -143,7 +168,7 @@ router.patch('/enviar-mensaje', async (req, res) => {
     });
     
     if (pantallaActualizada){
-        await publishMessage(pantalla.nombre, mensaje)
+        await publishMessage(pantalla.nombre, mensaje+"&"+String(animacion))
     }
 
     return res
@@ -219,15 +244,9 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     const fin_minuto = hora_fin? hora_fin_array[1] : ''
     const trans_date_hora_fin = hora_fin? new Date(fin_year,fin_month,fin_day,fin_hora,fin_minuto) : '';
     
-    if (tiempo_actividad){
-        //esta funcion solo permite fecha y hora inicio por unos segundos/minutos/horas definidas, no tiene una fecha como tal
-        scheduleMessageConTiempo(jobId,dias,trans_date_hora_inicio,trans_date_hora_inicio,pantalla.nombre,
-            mensaje,animacion,Number(tiempo_actividad),pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
-    }else{
-        //esta funcion permite setear la fecha,hora inicio y fecha,hora fin de un mensaje
-        scheduleMessage(jobId,dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
-            ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
-    }
+    scheduleMessage(jobId,dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
+        ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
+    
 
     //si posee fecha final no quedaria por defecto
     if (fechaFinDate){
@@ -249,6 +268,58 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
         });
     }
    
+    return res
+        .status(200)
+        .set('x-mensaje', 'Se actualizó el mensaje de la pantalla')
+        .end();
+});
+
+//ENVIAR UN MENSAJE CON TIEMPO
+router.patch('/enviar-mensaje-con-tiempo', async (req, res) => {
+    const { error } = schemaMensajeConTiempo.validate(req.body);
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
+
+    const id: number = req.body.id;
+    const mensaje: string = req.body.mensaje;
+
+    const pantalla = await prisma.pantalla.findUnique({
+        where: { id: id },
+    });
+    if (!pantalla) {
+        return res
+            .status(404)
+            .set('x-mensaje', 'Pantalla no encontrada')
+            .end();
+    }
+    const { dias, fecha_inicio, hora_inicio, animacion, tiempo_actividad } = req.body;
+    const jobId = uuidv4();
+
+    if (hora_inicio && !fecha_inicio){
+        //no tiene sentido no tener fecha de inicio y si hora
+        return res.status(410)
+            .set('x-mensaje', 'No tiene sentido tener hora de inicio y no fecha inicio')
+            .end();
+    }
+    
+    
+    //fechas
+    const fechaInicioDate = new Date(fecha_inicio);
+    const inicio_year=fechaInicioDate.getFullYear();
+    const inicio_month=fechaInicioDate.getMonth();
+    const inicio_day=fechaInicioDate.getDate()+1;
+
+    //horas
+    const hora_inicio_array = hora_inicio? hora_inicio.split(":") : '';
+    const inicio_hora = hora_inicio? hora_inicio_array[0] : '';
+    const inicio_minuto = hora_inicio? hora_inicio_array[1] : '';
+    const trans_date_hora_inicio = hora_inicio? new Date(inicio_year,inicio_month,inicio_day,inicio_hora,inicio_minuto) : '';
+    
+    
+    //esta funcion solo permite fecha y hora inicio por unos segundos/minutos/horas definidas, no tiene una fecha como tal
+    scheduleMessageConTiempo(jobId,dias,fechaInicioDate,trans_date_hora_inicio,pantalla.nombre,
+        mensaje,animacion,Number(tiempo_actividad),pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
 
     return res
         .status(200)
