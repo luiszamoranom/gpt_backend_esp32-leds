@@ -148,10 +148,12 @@ router.patch('/editar-usuario', async (req, res) => {
     return res
       .status(200)
       .set('x-mensaje', 'Usuario actualizado')
+      .end();
   }
   return res
       .status(409)
       .set('x-mensaje', 'Error al actualizar')
+      .end();
   
 });
 
