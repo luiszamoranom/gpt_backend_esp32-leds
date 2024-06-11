@@ -14,10 +14,18 @@ const schemaRegistrarUsuario = Joi.object({
   imagen_base64: Joi.string().base64(),
   imagen_tipo: Joi.string().min(3).max(4),
 });
+const schemaEditarUsuario = Joi.object({
+  email: Joi.string().required(),
+  nombre_completo: Joi.string().required().min(3).max(50),
+  imagen_base64: Joi.string().base64(),
+  imagen_tipo: Joi.string().min(3).max(4),
+});
+const schemaBuscarPorId = Joi.object({
+  id: Joi.number().required()
+})
 
 router.post('/registrar', async (req, res) => {
   const { error } = schemaRegistrarUsuario.validate(req.body);
-
   if (error) {
     return res.status(400).set('x-mensaje', error.details[0].message).end();
   }
@@ -66,14 +74,18 @@ router.post('/registrar', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/habilitados', async (req, res) => {
   try {
-    const usuarios = await prisma.usuario.findMany();
+    const usuarios = await prisma.usuario.findMany({
+      where:{
+        habilitado:true
+      }
+    });
 
     if (usuarios.length === 0) {
       return res
         .status(204)
-        .set('x-mensaje', 'No hay usuarios registrados')
+        .set('x-mensaje', 'No hay usuarios habilitados')
         .end();
     }
 
@@ -85,7 +97,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('', async (req, res) => {
-  const usuarios = await prisma.pantalla.findMany();
+  const usuarios = await prisma.usuario.findMany();
   if(usuarios.length == 0){
     return res
         .status(404)
@@ -94,9 +106,53 @@ router.get('', async (req, res) => {
   }
 
   return res
-      .status(404)
+      .status(200)
       .set('x-mensaje', 'Información de los usuarios')
       .send(usuarios)
+});
+
+router.patch('/editar-usuario', async (req, res) => {
+  const id = req.query.id as string;
+  const { error } = schemaBuscarPorId.validate({id:Number(id)});
+  if (error) {
+      return res.status(400).set('x-mensaje', error.details[0].message).end();
+  }
+
+  const { error:error2 } = schemaEditarUsuario.validate(req.body);
+  if (error2) {
+    return res.status(400).set('x-mensaje', error2.details[0].message).end();
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+      where: { id: Number(id) }
+  });
+  if (!usuario) {
+      return res
+          .status(404)
+          .set('x-mensaje', 'Usuario no encontrado')
+          .end();
+  }
+
+  const editar = await prisma.usuario.update({
+    where:{
+      id:Number(id)
+    },
+    data:{
+      nombreCompleto:req.body.nombre_completo,
+      email:req.body.email,
+      fotoPerfil:req.body.imagen_base64,
+      fotoExtension:req.body.imagen_tipo
+    }
+  });
+  if (editar){
+    return res
+      .status(200)
+      .set('x-mensaje', 'Usuario actualizado')
+  }
+  return res
+      .status(409)
+      .set('x-mensaje', 'Error al actualizar')
+  
 });
 
 export default router;

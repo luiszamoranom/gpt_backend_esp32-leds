@@ -16,17 +16,16 @@ const schemaAsociarUsuarioPantalla = Joi.object({
     usuario_id : Joi.number().required().min(1),
     pantalla_id : Joi.number().required().min(1)
 });
-
-//OBTENER PANTALLAS DE UN USUARIO
-router.get('/asociacion-by-usuario', async (req,res) => {
+//OBTENER TODAS LAS ASOCIACIONES CON PANTALLA DE UN USUARIO
+router.get('/asociacion-by-usuario-todas', async (req,res) => {
     const id = req.query.id as string;
-    const { error } = schemaBuscarPorId.validate({id:id});
+    const { error } = schemaBuscarPorId.validate({id:Number(id)});
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
     }
 
     const usuario = await prisma.usuario.findUnique({
-        where: { id: req.body.usuario_id }
+        where: { id: Number(id) }
     });
     if (!usuario) {
         return res
@@ -36,21 +35,68 @@ router.get('/asociacion-by-usuario', async (req,res) => {
     }
 
     const pantallas = await prisma.usuarioPantalla.findMany({
-        where:{
-            usuarioId:Number(id)
+        where: {
+          usuarioId: Number(id)
+        },
+        include: {
+          pantalla: true
         }
-    })
+    });
     if (pantallas.length>0){
         return res
             .status(200)
-            .send(pantallas)
             .set('x-mensaje', 'Pantallas encontradas')
+            .send(pantallas)
             .end();
     }else{
         return res
         .status(404)
-        .send(pantallas)
         .set('x-mensaje', 'No se encontraron pantallas')
+        .send(pantallas)
+        .end();
+    }
+});
+
+-//OBTENER TODAS LAS ASOCIACIONES CON PANTALLAS HABILITADAS DE UN USUARIO
+router.get('/asociacion-by-usuario-habilitadas', async (req,res) => {
+    const id = req.query.id as string;
+    const { error } = schemaBuscarPorId.validate({id:Number(id)});
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+        where: { id: Number(id) }
+    });
+    if (!usuario) {
+        return res
+            .status(404)
+            .set('x-mensaje', 'Usuario no encontrado')
+            .end();
+    }
+
+    const pantallas = await prisma.usuarioPantalla.findMany({
+        where: {
+          usuarioId: Number(id),
+          pantalla: {
+            habilitada: true
+          }
+        },
+        include: {
+          pantalla: true
+        }
+    });
+    if (pantallas.length>0){
+        return res
+            .status(200)
+            .set('x-mensaje', 'Pantallas encontradas')
+            .send(pantallas)
+            .end();
+    }else{
+        return res
+        .status(404)
+        .set('x-mensaje', 'No se encontraron pantallas')
+        .send(pantallas)
         .end();
     }
 });
@@ -103,7 +149,7 @@ router.post('', async (req,res) => {
     })
     if (asociar){
         return res
-            .status(200)
+            .status(201)
             .set('x-mensaje', 'Pantallas asociada a usuario')
             .end();
     }
@@ -143,10 +189,10 @@ router.delete('', async (req,res) => {
             usuarioId:req.body.usuario_id
         }
     });
-    if (asociacionExistente) {
+    if (!asociacionExistente) {
         return res
             .status(409)
-            .set('x-mensaje', 'Ya existe la asociacion')
+            .set('x-mensaje', 'No existe la asociacion')
             .end();
     }
     
@@ -163,7 +209,7 @@ router.delete('', async (req,res) => {
     if (desasociar){
         return res
             .status(200)
-            .set('x-mensaje', 'Pantallas asociada a usuario')
+            .set('x-mensaje', 'Pantallas desasociada a usuario')
             .end();
     }
     return res.status(409).end();
