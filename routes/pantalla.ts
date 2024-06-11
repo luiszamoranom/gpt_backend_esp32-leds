@@ -367,9 +367,19 @@ router.get('/usuarios-by-pantalla', async (req, res) => {
     const asociaciones = await prisma.usuarioPantalla.findMany({
         where:{
             pantallaId:Number(id)
+        },
+        include: {
+            usuario: {
+                select:{
+                    id:true,
+                    nombreCompleto:true,
+                    rol:true,
+                    email:true
+                }
+            }
         }
     })
-    if(asociaciones.length=0){
+    if(asociaciones.length==0){
         return res
             .status(405)
             .set('x-mensaje', 'No contiene usuarios la pantalla')
