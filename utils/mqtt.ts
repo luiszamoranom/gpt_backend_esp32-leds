@@ -65,12 +65,11 @@ export const scheduleMessage = (jobId:any, dias:string, fechaInicio:any, fecha_h
                 publishMessage(pantalla, mensaje_actual);
             })
         }
-        
 
         //este sirve para indicar cuando se debe volver al mensaje por defecto
         const job2 = schedule.scheduleJob(date_end,function() {
             console.log(new Date(Date.now()),"setea por default:",mensaje_actual)
-            publishMessage(pantalla, new_msg);
+            publishMessage(pantalla, mensaje_actual);
         })
     }
     //tiene fecha de inicio y no fin -> es un mensaje por defecto programado
@@ -107,9 +106,13 @@ export const scheduleMessageConTiempo = (jobId:any, dias:any, fechaInicio:any, f
     pantalla:any, mensaje:any, animacion:any,tiempo:number,mensaje_actual:string) => {
 
     const new_msg = mensaje+"&"+String(animacion)
-    const inicio_msg = fecha_hora_inicio
+    let date_start = fechaInicio
+    if (fecha_hora_inicio !== '' && fechaInicio){
+        date_start = fecha_hora_inicio
+    }
+    const inicio_msg = date_start
     const fin_msg = new Date(inicio_msg.getTime()+(1000*tiempo))
-    const job1 = schedule.scheduleJob(fecha_hora_inicio,function() {
+    const job1 = schedule.scheduleJob(date_start,function() {
         console.log(new Date(Date.now()),"envia:",new_msg)
         publishMessage(pantalla, new_msg);
     })
