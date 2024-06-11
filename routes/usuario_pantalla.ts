@@ -16,8 +16,8 @@ const schemaAsociarUsuarioPantalla = Joi.object({
     usuario_id : Joi.number().required().min(1),
     pantalla_id : Joi.number().required().min(1)
 });
-
-router.get('/asociacion-by-usuario', async (req,res) => {
+//OBTENER TODAS LAS ASOCIACIONES CON PANTALLA DE UN USUARIO
+router.get('/asociacion-by-usuario-todas', async (req,res) => {
     const id = req.query.id as string;
     const { error } = schemaBuscarPorId.validate({id:id});
 
@@ -32,10 +32,54 @@ router.get('/asociacion-by-usuario', async (req,res) => {
     }
 
     const pantallas = await prisma.usuarioPantalla.findMany({
-        where:{
-            usuarioId:Number(id)
+        where: {
+          usuarioId: Number(id)
+        },
+        include: {
+          pantalla: true
         }
-    })
+    });
+    if (pantallas.length>0){
+        return res
+            .status(200)
+            .send(pantallas)
+            .set('x-mensaje', 'Pantallas encontradas')
+            .end();
+    }else{
+        return res
+        .status(404)
+        .send(pantallas)
+        .set('x-mensaje', 'No se encontraron pantallas')
+        .end();
+    }
+});
+
+-//OBTENER TODAS LAS ASOCIACIONES CON PANTALLAS HABILITADAS DE UN USUARIO
+router.get('/asociacion-by-usuario-habilitadas', async (req,res) => {
+    const id = req.query.id as string;
+    const { error } = schemaBuscarPorId.validate({id:id});
+
+    const usuario = await prisma.usuario.findUnique({
+        where: { id: req.body.usuario_id }
+    });
+    if (!usuario) {
+        return res
+            .status(404)
+            .set('x-mensaje', 'Usuario no encontrado')
+            .end();
+    }
+
+    const pantallas = await prisma.usuarioPantalla.findMany({
+        where: {
+          usuarioId: Number(id),
+          pantalla: {
+            habilitada: true
+          }
+        },
+        include: {
+          pantalla: true
+        }
+    });
     if (pantallas.length>0){
         return res
             .status(200)
