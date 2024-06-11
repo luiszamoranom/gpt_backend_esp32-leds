@@ -32,6 +32,7 @@ router.post('/login', async (req, res) => {
         rol: true,
         contrasena: true,
         habilitado: true,
+        nombreCompleto:true
       },
     });
 
@@ -62,11 +63,14 @@ router.post('/login', async (req, res) => {
     const accessToken = jwt.sign({ usuarioRol }, secretKey, {
       expiresIn: '1h',
     });
-
+    const response = {
+      nombre:usuarioRegistrado.nombreCompleto,
+      token:accessToken
+    }
     res
       .status(200)
       .set('x-message', 'Usuario autenticado.')
-      .send(accessToken)
+      .send(response)
       .end();
   } catch (error) {
     console.error(error);
