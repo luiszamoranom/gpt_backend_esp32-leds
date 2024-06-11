@@ -13,7 +13,9 @@ const router = Router();
 const schemaRegistrarPantalla = Joi.object({
     nombre: Joi.string().required().min(3).max(20)
 });
-
+const schemaBuscarPorId = Joi.object({
+    id: Joi.number().required()
+})
 const schemaActualizarMensaje = Joi.object({
     id: Joi.number().required().messages({
         'number.base': 'El id debe ser un número.',
@@ -51,9 +53,10 @@ const schemaMensajeProgramado = Joi.object({
         'number.min': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
         'number.max': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
     }),
-    dias: Joi.string().required().messages({
+    dias: Joi.string().required().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
         'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
-        'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio'
+        'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio',
+        'string.pattern.base': 'Los opciones de dia son: Todos los días, Lunes a Viernes o Sábado y Domingo.'
     }),
     fecha_inicio: Joi.string().allow('').pattern(/^\d{4}-\d{2}-\d{2}$/, 'date').messages({
       'string.pattern.base': 'La fecha de inicio debe estar en el formato yyyy-mm-dd.'
@@ -75,7 +78,7 @@ const schemaMensajeProgramado = Joi.object({
     })
 });
 
-
+//CREAR UNA PANTALLA
 router.post('', async (req, res) => {
     const { error } = schemaRegistrarPantalla.validate(req.body);
 
@@ -108,6 +111,7 @@ router.post('', async (req, res) => {
         .end();
 });
 
+//ENVIAR UN MENSAJE POR DEFECTO
 router.patch('/enviar-mensaje', async (req, res) => {
     const { error } = schemaActualizarMensaje.validate(req.body);
 
@@ -148,6 +152,7 @@ router.patch('/enviar-mensaje', async (req, res) => {
         .end();
 });
 
+//ENVIAR UN MENSAJE PROGRAMADO
 router.patch('/enviar-mensaje-programado', async (req, res) => {
     const { error } = schemaMensajeProgramado.validate(req.body);
     if (error) {
@@ -224,12 +229,26 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
     }
 
-    const pantallaActualizada = await prisma.pantalla.update({
-        where: { id: id },
-        data: { 
-            mensajeActual: mensaje+"&"+String(animacion)
-        },
-    });
+    //si posee fecha final no quedaria por defecto
+    if (fechaFinDate){
+        const pantallaActualizada = await prisma.pantalla.update({
+            where: { id: id },
+            data: { 
+                mensajeActual: mensaje+"&"+String(animacion)
+            },
+        });
+    }
+    //como NO tiene fecha final pasaria un por defecto que simplemente se programa
+    else{
+        const pantallaActualizada = await prisma.pantalla.update({
+            where: { id: id },
+            data: { 
+                mensajeActual: mensaje+"&"+String(animacion),
+                mensajeDefecto: mensaje+"&"+String(animacion)
+            },
+        });
+    }
+   
 
     return res
         .status(200)
@@ -237,6 +256,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
         .end();
 });
 
+//OBTENER TODAS LAS PANTALLAS
 router.get('', async (req, res) => {
     const pantallas = await prisma.pantalla.findMany();
     if(pantallas.length == 0){
@@ -252,5 +272,43 @@ router.get('', async (req, res) => {
         .send(pantallas)
 });
 
+//OBTENER USUARIOS DE UNA PANTALLA
+router.get('/usuarios-by-pantalla', async (req, res) => {
+    const id = req.query.id as string;
+    const { error } = schemaBuscarPorId.validate({id:id});
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
+
+    const pantallas = await prisma.pantalla.findFirst({
+        where:{
+            id:Number(id)
+        }
+    });
+
+    if(!pantallas){
+        return res
+            .status(404)
+            .set('x-mensaje', 'No se encuentra la pantalla')
+            .end();
+    }
+
+    const asociaciones = await prisma.usuarioPantalla.findMany({
+        where:{
+            pantallaId:Number(id)
+        }
+    })
+    if(asociaciones.length=0){
+        return res
+            .status(405)
+            .set('x-mensaje', 'No contiene usuarios la pantalla')
+            .end();
+    }
+
+    return res
+        .status(200)
+        .set('x-mensaje', 'Información de la pantalla')
+        .send(asociaciones)
+});
 
 export default router;
