@@ -79,6 +79,12 @@ router.get('/habilitados', async (req, res) => {
     const usuarios = await prisma.usuario.findMany({
       where:{
         habilitado:true
+      },
+      select:{
+        id:true,
+        nombreCompleto:true,
+        email:true,
+        rol:true
       }
     });
 
@@ -97,7 +103,15 @@ router.get('/habilitados', async (req, res) => {
 });
 
 router.get('', async (req, res) => {
-  const usuarios = await prisma.usuario.findMany();
+  const usuarios = await prisma.usuario.findMany({
+    select:{
+      id:true,
+      nombreCompleto:true,
+      email:true,
+      habilitado:true,
+      rol:true,
+    }
+  });
   if(usuarios.length == 0){
     return res
         .status(404)
