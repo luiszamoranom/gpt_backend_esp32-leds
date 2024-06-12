@@ -18,6 +18,7 @@ model Usuario {
   rol            String            @default("usuario") @db.VarChar(50)
   createAt       DateTime          @default(now()) @db.Timestamptz
   pantallas      UsuarioPantalla[]
+  crons          CronUsuario[]
 }
 
 model Pantalla {
@@ -37,4 +38,16 @@ model UsuarioPantalla {
   pantalla   Pantalla @relation(fields: [pantallaId], references: [id])
 
   @@id([usuarioId, pantallaId])
+}
+model Cron {
+  id              String            @id
+  descripcion     String            @default("")
+  usuarios        CronUsuario[]
+}
+model CronUsuario {
+  cronId      String           
+  usuarioId   Int
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  cron        Cron      @relation(fields: [cronId], references: [id])
+  @@id([cronId, usuarioId])
 }
