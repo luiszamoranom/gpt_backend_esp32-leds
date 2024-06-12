@@ -79,6 +79,12 @@ router.get('/habilitados', async (req, res) => {
     const usuarios = await prisma.usuario.findMany({
       where:{
         habilitado:true
+      },
+      select:{
+        id:true,
+        nombreCompleto:true,
+        email:true,
+        rol:true
       }
     });
 
@@ -97,7 +103,15 @@ router.get('/habilitados', async (req, res) => {
 });
 
 router.get('', async (req, res) => {
-  const usuarios = await prisma.usuario.findMany();
+  const usuarios = await prisma.usuario.findMany({
+    select:{
+      id:true,
+      nombreCompleto:true,
+      email:true,
+      habilitado:true,
+      rol:true,
+    }
+  });
   if(usuarios.length == 0){
     return res
         .status(404)
@@ -148,10 +162,12 @@ router.patch('/editar-usuario', async (req, res) => {
     return res
       .status(200)
       .set('x-mensaje', 'Usuario actualizado')
+      .end();
   }
   return res
       .status(409)
       .set('x-mensaje', 'Error al actualizar')
+      .end();
   
 });
 

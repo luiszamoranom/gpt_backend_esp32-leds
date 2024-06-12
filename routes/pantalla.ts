@@ -53,8 +53,8 @@ const schemaMensajeProgramado = Joi.object({
         'number.min': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
         'number.max': 'animacion, campo que registra el tipo de animación, debe ser entre 0 y 10',
     }),
-    dias: Joi.string().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
-        //'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
+    dias: Joi.string().required().pattern(/^(Todos los días|Lunes a Viernes|Sábado y Domingo)$/).messages({
+        'any.required': 'dias, campo que registra los dias del mensaje programado es obligatorio',
         'string.empty': 'dias, campo que registra los dias del mensaje programado, no puede estar vacio',
         'string.pattern.base': 'Los opciones de dia son: Todos los días, Lunes a Viernes o Sábado y Domingo.'
     }),
@@ -127,6 +127,8 @@ router.post('', async (req, res) => {
     const nuevaPantalla = await prisma.pantalla.create({
         data: {
             nombre: nombre,
+            mensajeDefecto:"Mensaje por defecto",
+            mensajeActual: "Mensaje por defecto"
         },
     });
 
@@ -138,8 +140,13 @@ router.post('', async (req, res) => {
 
 //ENVIAR UN MENSAJE POR DEFECTO
 router.patch('/enviar-mensaje', async (req, res) => {
-    const { error } = schemaActualizarMensaje.validate(req.body);
+    const id_usuario = req.query.id as string;
+    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
 
+    const { error } = schemaActualizarMensaje.validate(req.body);
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
     }
@@ -179,6 +186,12 @@ router.patch('/enviar-mensaje', async (req, res) => {
 
 //ENVIAR UN MENSAJE PROGRAMADO
 router.patch('/enviar-mensaje-programado', async (req, res) => {
+    const id_usuario = req.query.id as string;
+    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
+
     const { error } = schemaMensajeProgramado.validate(req.body);
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
@@ -196,8 +209,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             .set('x-mensaje', 'Pantalla no encontrada')
             .end();
     }
-    const { dias, fecha_inicio, hora_inicio, hora_fin, animacion, fecha_fin, tiempo_actividad } = req.body;
-    const jobId = uuidv4();
+    const { dias, fecha_inicio, hora_inicio, hora_fin, animacion, fecha_fin} = req.body;
 
     //si tiene fecha inicio puede tener hora de inicio, si tiene hora inicio si o si debe tener fecha inicio
     //si tiene fecha termino puede tener hor de fin, si tiene hora fin si o si debe tener fecha fin
@@ -244,7 +256,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     const fin_minuto = hora_fin? hora_fin_array[1] : ''
     const trans_date_hora_fin = hora_fin? new Date(fin_year,fin_month,fin_day,fin_hora,fin_minuto) : '';
     
-    scheduleMessage(jobId,dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
+    scheduleMessage(Number(id_usuario),dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
         ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
     
 
@@ -276,6 +288,12 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
 
 //ENVIAR UN MENSAJE CON TIEMPO
 router.patch('/enviar-mensaje-con-tiempo', async (req, res) => {
+    const id_usuario = req.query.id as string;
+    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
+
     const { error } = schemaMensajeConTiempo.validate(req.body);
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
@@ -294,7 +312,6 @@ router.patch('/enviar-mensaje-con-tiempo', async (req, res) => {
             .end();
     }
     const { dias, fecha_inicio, hora_inicio, animacion, tiempo_actividad } = req.body;
-    const jobId = uuidv4();
 
     if (hora_inicio && !fecha_inicio){
         //no tiene sentido no tener fecha de inicio y si hora
@@ -318,7 +335,7 @@ router.patch('/enviar-mensaje-con-tiempo', async (req, res) => {
     
     
     //esta funcion solo permite fecha y hora inicio por unos segundos/minutos/horas definidas, no tiene una fecha como tal
-    scheduleMessageConTiempo(jobId,dias,fechaInicioDate,trans_date_hora_inicio,pantalla.nombre,
+    scheduleMessageConTiempo(Number(id_usuario),dias,fechaInicioDate,trans_date_hora_inicio,pantalla.nombre,
         mensaje,animacion,Number(tiempo_actividad),pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
 
     return res
@@ -367,9 +384,19 @@ router.get('/usuarios-by-pantalla', async (req, res) => {
     const asociaciones = await prisma.usuarioPantalla.findMany({
         where:{
             pantallaId:Number(id)
+        },
+        include: {
+            usuario: {
+                select:{
+                    id:true,
+                    nombreCompleto:true,
+                    rol:true,
+                    email:true
+                }
+            }
         }
     })
-    if(asociaciones.length=0){
+    if(asociaciones.length==0){
         return res
             .status(405)
             .set('x-mensaje', 'No contiene usuarios la pantalla')
