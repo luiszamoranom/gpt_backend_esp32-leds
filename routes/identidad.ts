@@ -32,7 +32,8 @@ router.post('/login', async (req, res) => {
         rol: true,
         contrasena: true,
         habilitado: true,
-        nombreCompleto:true
+        nombreCompleto:true,
+        id:true
       },
     });
 
@@ -65,7 +66,8 @@ router.post('/login', async (req, res) => {
     });
     const response = {
       nombre:usuarioRegistrado.nombreCompleto,
-      token:accessToken
+      token:accessToken,
+      id:usuarioRegistrado.id
     }
     res
       .status(200)
