@@ -274,7 +274,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     if (fecha_fin && !fecha_inicio){
         //no tiene sentido tener fecha de termino y no de inicio
         return res.status(411)
-        .set('x-mensaje', 'No tiene sentido tener hora de termino y no fecha termino')
+        .set('x-mensaje', 'No tiene sentido tener fecha de termino y no fecha inicio')
         .end();
     }
     if (hora_inicio && !fecha_inicio){
@@ -285,7 +285,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     }
     if (hora_fin && !fecha_fin){
         //no tiene sentido no tener fecha de inicio y si hora
-        return res.status(410)
+        return res.status(415)
             .set('x-mensaje', 'No tiene sentido tener hora de termino y no fecha termino')
             .end();
     }
@@ -316,14 +316,14 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     if (fecha_fin){
         if (fechaInicioDate.getTime() > fechaFinDate.getTime() ){
             return res
-                .status(410)
+                .status(416)
                 .set('x-mensaje', 'La fecha de termino no puede ser inferior a la de inicio')
                 .end();
         }
         if (trans_date_hora_inicio!=='' &&  trans_date_hora_fin!=='' ){
-            if (trans_date_hora_inicio.getTime() > trans_date_hora_fin.getTime()){
+            if ( fechaInicioDate.getTime() == fechaFinDate.getTime() &&  trans_date_hora_inicio.getTime() > trans_date_hora_fin.getTime()){
                 return res
-                .status(411)
+                .status(417)
                 .set('x-mensaje', 'La hora de termino no puede ser inferior a la de inicio')
                 .end();
             }
@@ -424,6 +424,7 @@ router.get('/usuarios-by-pantalla', async (req, res) => {
         .status(200)
         .set('x-mensaje', 'Información de la pantalla')
         .send(asociaciones)
+        .end();
 });
 
 router.delete('/cron-activos', async (req,res) => {
