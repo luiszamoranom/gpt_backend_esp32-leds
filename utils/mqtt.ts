@@ -19,8 +19,8 @@ export const publishMessage = (pantalla:string, mensaje:string) => {
   client.publish(pantalla, mensaje);
 };
 
-export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:any, fecha_hora_inicio:any, 
-    fecha_hora_fin:any, pantalla:string, mensaje:string, animacion:number, fechaFin:any,mensaje_actual:string) => {
+export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_inicio:any, 
+    fecha_hora_fin:any, pantalla:string, mensaje:string, animacion:number, fechaFin:any,mensaje_actual:string,pantalla_id:number) => {
 
     const new_msg = mensaje+"&"+String(animacion)
     
@@ -78,7 +78,7 @@ export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:an
         const asociar_job0 = await prisma.cronUsuario.create({
             data:{
                 cronId:id_job0,
-                usuarioId:usuarioId
+                pantallaId: pantalla_id
             }
         })
         
@@ -97,7 +97,7 @@ export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:an
         const asociar_job1 = await prisma.cronUsuario.create({
             data:{
                 cronId:id_job1,
-                usuarioId:usuarioId
+                pantallaId: pantalla_id
             }
         })
 
@@ -118,34 +118,43 @@ export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:an
             const asociar_job_out = await prisma.cronUsuario.create({
                 data:{
                     cronId:id_job_out,
-                    usuarioId:usuarioId
+                    pantallaId:pantalla_id
                 }
             })
         }
 
         //este sirve para indicar cuando se debe volver al mensaje por defecto
         const id_job_cancel = uuidv4()
-        const job_cancel = schedule.scheduleJob(id_job_cancel,date_end,function() {
+        const job_cancel = schedule.scheduleJob(id_job_cancel,date_end, async function() {
             job0.cancel()
             job1.cancel()
             if (job_out){
                 job_out.cancel()
             }
+            const crons = await prisma.cronUsuario.findMany({
+                where:{
+                    pantallaId:pantalla_id
+                },
+                select:{
+                    cronId:true
+                }
+            })
+            const eliminarCrons = await prisma.cronUsuario.deleteMany({
+                where: {
+                    pantallaId: pantalla_id
+                }
+            });
+            for (let i = 0 ; i < crons.length ; i++){
+                const deleteCrons = await prisma.cron.delete({
+                    where:{
+                        id: crons[i].cronId
+                    }
+                })
+            } 
+            
             console.log("Se acabó el mensaje programado, vuelvo al mensaje por default, se borra el mensaje programado actual")
             publishMessage(pantalla, mensaje_actual);
         });
-        const save_job_cancel = await prisma.cron.create({
-            data:{
-                id:id_job_cancel,
-                descripcion:`Cron para eliminar los cron programados de un mensaje específico`
-            }
-        })
-        const asociar_job_cancel = await prisma.cronUsuario.create({
-            data:{
-                cronId:id_job_cancel,
-                usuarioId:usuarioId
-            }
-        })
     }
     //tiene fecha de inicio y no fin -> es un mensaje por defecto programado
     else if (!isNaN(validarFechaInicio.getTime()) && isNaN(validarFechaFin.getTime())){
@@ -179,7 +188,7 @@ export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:an
         const asociar_job0 = prisma.cronUsuario.create({
             data:{
                 cronId:id_job0,
-                usuarioId:usuarioId
+                pantallaId: pantalla_id
             }
         })
     }
@@ -189,60 +198,7 @@ export const scheduleMessage = async (usuarioId:any, dias:string, fechaInicio:an
     }
 };
 
-export const scheduleMessageConTiempo = async (usuarioId:any, dias:any, fechaInicio:any, fecha_hora_inicio:any,
-    pantalla:any, mensaje:any, animacion:any,tiempo:number,mensaje_actual:string) => {
-
-    const new_msg = mensaje+"&"+String(animacion)
-    let date_start = fechaInicio
-    if (fecha_hora_inicio !== '' && fechaInicio){
-        date_start = fecha_hora_inicio
-    }
-    const inicio_msg = date_start
-    const fin_msg = new Date(inicio_msg.getTime()+(1000*tiempo))
-
-    const id_job1 = uuidv4()
-    const job1 = schedule.scheduleJob(id_job1,date_start,function() {
-        console.log(new Date(Date.now()),"envia:",new_msg)
-        publishMessage(pantalla, new_msg);
-    })
-    const save_job1 = await prisma.cron.create({
-        data:{
-            id:id_job1,
-            descripcion:`Cron para mensaje con tiempo`
-        }
-    })
-    const asociar_job1 = await prisma.cronUsuario.create({
-        data:{
-            cronId:id_job1,
-            usuarioId:usuarioId
-        }
-    })
-    const id_job2 = uuidv4()
-    const job2 = schedule.scheduleJob(id_job2,fin_msg,function() {
-        console.log(new Date(Date.now()),"setea por default:",mensaje_actual)
-        publishMessage(pantalla, mensaje_actual);
-    })
-    
-    const save_job2 = await prisma.cron.create({
-        data:{
-            id:id_job2,
-            descripcion:`Cron para eliminar cron de mensaje con tiempo`
-        }
-    })
-    const asociar_job2 = await prisma.cronUsuario.create({
-        data:{
-            cronId:id_job2,
-            usuarioId:usuarioId
-        }
-    })
-};
-
 export const deleteScheduledMessage = (jobId:any) => {
   schedule.cancelJob(jobId);
 };
 
-// module.exports = {
-//   publishMessage,
-//   scheduleMessage,
-//   deleteScheduledMessage,
-// };

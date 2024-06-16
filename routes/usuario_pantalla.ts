@@ -42,6 +42,7 @@ router.get('/asociacion-by-usuario-todas', async (req,res) => {
           pantalla: true
         }
     });
+
     if (pantallas.length>0){
         return res
             .status(200)

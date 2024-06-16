@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import Joi from 'joi';
 import { v4 as uuidv4 } from 'uuid';
-import  {publishMessage, scheduleMessage, scheduleMessageConTiempo}  from '../utils/mqtt';
+import  {publishMessage, scheduleMessage}  from '../utils/mqtt';
 import bcrypt from 'bcryptjs';
 import jwt from "jsonwebtoken";
 
@@ -140,12 +140,6 @@ router.post('', async (req, res) => {
 
 //ENVIAR UN MENSAJE POR DEFECTO
 router.patch('/enviar-mensaje', async (req, res) => {
-    const id_usuario = req.query.id as string;
-    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
-    if (error2) {
-        return res.status(400).set('x-mensaje', error2.details[0].message).end();
-    }
-
     const { error } = schemaActualizarMensaje.validate(req.body);
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
@@ -153,11 +147,9 @@ router.patch('/enviar-mensaje', async (req, res) => {
 
     const id: number = req.body.id;
     const mensaje: string = req.body.mensaje;
-
     const pantalla = await prisma.pantalla.findUnique({
         where: { id: id },
     });
-
     if (!pantalla) {
         return res
             .status(404)
@@ -165,6 +157,36 @@ router.patch('/enviar-mensaje', async (req, res) => {
             .end();
     }
 
+    const id_usuario = req.query.id as string;
+    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
+    const usuario = await prisma.usuario.findUnique({
+        where: { id: Number(id_usuario) }
+    });
+    if (!usuario) {
+        return res
+            .status(412)
+            .set('x-mensaje', 'Usuario no encontrado')
+            .end();
+    }
+
+    if (usuario.rol!=='administrador'){
+        const isAsociado = await prisma.usuarioPantalla.findFirst({
+            where:{
+                pantallaId: pantalla.id,
+                usuarioId: usuario.id
+            }
+        })
+        if (!isAsociado){
+            return res
+                .status(414)
+                .set('x-mensaje', 'El usuario no tiene permiso para enviar mensajes')
+                .end();
+        }    
+    }
+    
     const animacion: string = req.body.animacion;
     const pantallaActualizada = await prisma.pantalla.update({
         where: { id: id },
@@ -175,7 +197,7 @@ router.patch('/enviar-mensaje', async (req, res) => {
     });
     
     if (pantallaActualizada){
-        await publishMessage(pantalla.nombre, mensaje+"&"+String(animacion))
+        publishMessage(pantalla.nombre, mensaje+"&"+String(animacion))
     }
 
     return res
@@ -186,12 +208,6 @@ router.patch('/enviar-mensaje', async (req, res) => {
 
 //ENVIAR UN MENSAJE PROGRAMADO
 router.patch('/enviar-mensaje-programado', async (req, res) => {
-    const id_usuario = req.query.id as string;
-    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
-    if (error2) {
-        return res.status(400).set('x-mensaje', error2.details[0].message).end();
-    }
-
     const { error } = schemaMensajeProgramado.validate(req.body);
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
@@ -209,11 +225,52 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             .set('x-mensaje', 'Pantalla no encontrada')
             .end();
     }
-    const { dias, fecha_inicio, hora_inicio, hora_fin, animacion, fecha_fin} = req.body;
+    const id_usuario = req.query.id as string;
+    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
+    const usuario = await prisma.usuario.findUnique({
+        where: { id: Number(id_usuario) }
+    });
+    if (!usuario) {
+        return res
+            .status(412)
+            .set('x-mensaje', 'Usuario no encontrado')
+            .end();
+    }
 
+    if (usuario.rol!=='administrador'){
+        const isAsociado = await prisma.usuarioPantalla.findFirst({
+            where:{
+                pantallaId: pantalla.id,
+                usuarioId: usuario.id
+            }
+        })
+        if (!isAsociado){
+            return res
+                .status(414)
+                .set('x-mensaje', 'El usuario no tiene permiso para enviar mensajes')
+                .end();
+        }    
+    }
+
+
+    const existeCron = await prisma.cronUsuario.findFirst({
+        where:{
+            pantallaId: pantalla.id
+        }
+    });
+    if (existeCron){
+        return res
+            .status(413)
+            .set('x-mensaje', 'Contiene cron activos')
+            .end();
+    }
+
+    const { dias, fecha_inicio, hora_inicio, hora_fin, animacion, fecha_fin} = req.body;
     //si tiene fecha inicio puede tener hora de inicio, si tiene hora inicio si o si debe tener fecha inicio
     //si tiene fecha termino puede tener hor de fin, si tiene hora fin si o si debe tener fecha fin
-
     if (fecha_fin && !fecha_inicio){
         //no tiene sentido tener fecha de termino y no de inicio
         return res.status(411)
@@ -232,7 +289,6 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             .set('x-mensaje', 'No tiene sentido tener hora de termino y no fecha termino')
             .end();
     }
-    
     
     //fechas
     const fechaInicioDate = new Date(fecha_inicio);
@@ -256,8 +312,27 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     const fin_minuto = hora_fin? hora_fin_array[1] : ''
     const trans_date_hora_fin = hora_fin? new Date(fin_year,fin_month,fin_day,fin_hora,fin_minuto) : '';
     
-    scheduleMessage(Number(id_usuario),dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
-        ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
+    //si tiene fecha fin se debe verificar que la fecha fin sea mayor o igual a la de inicio
+    if (fecha_fin){
+        if (fechaInicioDate.getTime() > fechaFinDate.getTime() ){
+            return res
+                .status(410)
+                .set('x-mensaje', 'La fecha de termino no puede ser inferior a la de inicio')
+                .end();
+        }
+        if (trans_date_hora_inicio!=='' &&  trans_date_hora_fin!=='' ){
+            if (trans_date_hora_inicio.getTime() > trans_date_hora_fin.getTime()){
+                return res
+                .status(411)
+                .set('x-mensaje', 'La hora de termino no puede ser inferior a la de inicio')
+                .end();
+            }
+        }
+    }
+    
+
+    scheduleMessage(dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
+        ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'',pantalla.id)
     
 
     //si posee fecha final no quedaria por defecto
@@ -286,64 +361,6 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
         .end();
 });
 
-//ENVIAR UN MENSAJE CON TIEMPO
-router.patch('/enviar-mensaje-con-tiempo', async (req, res) => {
-    const id_usuario = req.query.id as string;
-    const { error:error2 } = schemaBuscarPorId.validate({id:Number(id_usuario)});
-    if (error2) {
-        return res.status(400).set('x-mensaje', error2.details[0].message).end();
-    }
-
-    const { error } = schemaMensajeConTiempo.validate(req.body);
-    if (error) {
-        return res.status(400).set('x-mensaje', error.details[0].message).end();
-    }
-
-    const id: number = req.body.id;
-    const mensaje: string = req.body.mensaje;
-
-    const pantalla = await prisma.pantalla.findUnique({
-        where: { id: id },
-    });
-    if (!pantalla) {
-        return res
-            .status(404)
-            .set('x-mensaje', 'Pantalla no encontrada')
-            .end();
-    }
-    const { dias, fecha_inicio, hora_inicio, animacion, tiempo_actividad } = req.body;
-
-    if (hora_inicio && !fecha_inicio){
-        //no tiene sentido no tener fecha de inicio y si hora
-        return res.status(410)
-            .set('x-mensaje', 'No tiene sentido tener hora de inicio y no fecha inicio')
-            .end();
-    }
-    
-    
-    //fechas
-    const fechaInicioDate = new Date(fecha_inicio);
-    const inicio_year=fechaInicioDate.getFullYear();
-    const inicio_month=fechaInicioDate.getMonth();
-    const inicio_day=fechaInicioDate.getDate()+1;
-
-    //horas
-    const hora_inicio_array = hora_inicio? hora_inicio.split(":") : '';
-    const inicio_hora = hora_inicio? hora_inicio_array[0] : '';
-    const inicio_minuto = hora_inicio? hora_inicio_array[1] : '';
-    const trans_date_hora_inicio = hora_inicio? new Date(inicio_year,inicio_month,inicio_day,inicio_hora,inicio_minuto) : '';
-    
-    
-    //esta funcion solo permite fecha y hora inicio por unos segundos/minutos/horas definidas, no tiene una fecha como tal
-    scheduleMessageConTiempo(Number(id_usuario),dias,fechaInicioDate,trans_date_hora_inicio,pantalla.nombre,
-        mensaje,animacion,Number(tiempo_actividad),pantalla.mensajeDefecto?pantalla.mensajeDefecto:'')
-
-    return res
-        .status(200)
-        .set('x-mensaje', 'Se actualizó el mensaje de la pantalla')
-        .end();
-});
-
 //OBTENER TODAS LAS PANTALLAS
 router.get('', async (req, res) => {
     const pantallas = await prisma.pantalla.findMany();
@@ -363,7 +380,7 @@ router.get('', async (req, res) => {
 //OBTENER USUARIOS DE UNA PANTALLA
 router.get('/usuarios-by-pantalla', async (req, res) => {
     const id = req.query.id as string;
-    const { error } = schemaBuscarPorId.validate({id:id});
+    const { error } = schemaBuscarPorId.validate({id:Number(id)});
     if (error) {
         return res.status(400).set('x-mensaje', error.details[0].message).end();
     }
@@ -408,5 +425,66 @@ router.get('/usuarios-by-pantalla', async (req, res) => {
         .set('x-mensaje', 'Información de la pantalla')
         .send(asociaciones)
 });
+
+router.delete('/cron-activos', async (req,res) => {
+    const usuario_id = req.query.id as string;
+    const { error } = schemaBuscarPorId.validate({id:Number(usuario_id)});
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
+    const usuario = await prisma.usuario.findUnique({
+        where: { id: Number(usuario_id) }
+    });
+    if (!usuario) {
+        return res
+            .status(412)
+            .set('x-mensaje', 'Usuario no encontrado')
+            .end();
+    }
+    
+    const pantalla_id = Number(req.body.pantalla_id);
+    const { error:error2 } = schemaBuscarPorId.validate({id:pantalla_id});
+    if (error2) {
+        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+    }
+    const pantalla = await prisma.pantalla.findUnique({
+        where: { id:  pantalla_id},
+    });
+    if (!pantalla) {
+        return res
+            .status(404)
+            .set('x-mensaje', 'Pantalla no encontrada')
+            .end();
+    }
+
+    const isAsociado = await prisma.usuarioPantalla.findFirst({
+        where:{
+            pantallaId: pantalla.id,
+            usuarioId: usuario.id
+        }
+    })
+    if (!isAsociado){
+        return res
+            .status(414)
+            .set('x-mensaje', 'El usuario no tiene permiso para enviar mensajes')
+            .end();
+    }
+
+    const eliminarCrons = await prisma.cronUsuario.deleteMany({
+        where: {
+            pantallaId: pantalla_id
+        }
+    });
+    if (eliminarCrons){
+        return res
+        .status(200)
+        .set('x-mensaje', 'Se eliminaron los crons correctamente')
+        .end();
+    }
+    return res
+        .status(204)
+        .set('x-mensaje', 'No se encontraban cron en la pantalla')
+        .end();
+})
 
 export default router;
