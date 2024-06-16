@@ -18,7 +18,6 @@ model Usuario {
   rol            String            @default("usuario") @db.VarChar(50)
   createAt       DateTime          @default(now()) @db.Timestamptz
   pantallas      UsuarioPantalla[]
-  crons          CronUsuario[]
 }
 
 model Pantalla {
@@ -29,13 +28,14 @@ model Pantalla {
   habilitada      Boolean           @default(true)
   createAt        DateTime          @default(now()) @db.Timestamptz
   usuarios        UsuarioPantalla[]
+  crons           CronUsuario[]
 }
 
 model UsuarioPantalla {
   usuarioId  Int
   pantallaId Int
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
-  pantalla   Pantalla @relation(fields: [pantallaId], references: [id])
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pantalla   Pantalla @relation(fields: [pantallaId], references: [id], onDelete: Cascade)
 
   @@id([usuarioId, pantallaId])
 }
@@ -45,9 +45,9 @@ model Cron {
   usuarios        CronUsuario[]
 }
 model CronUsuario {
-  cronId      String           
-  usuarioId   Int
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
-  cron        Cron      @relation(fields: [cronId], references: [id])
-  @@id([cronId, usuarioId])
+  cronId      String
+  pantallaId  Int
+  cron        Cron          @relation(fields: [cronId], references: [id], onDelete: Cascade)
+  pantalla    Pantalla      @relation(fields: [pantallaId], references: [id], onDelete: Cascade)
+  @@id([cronId, pantallaId])
 }

@@ -30,20 +30,18 @@ router.post('/registrar', async (req, res) => {
     return res.status(400).set('x-mensaje', error.details[0].message).end();
   }
 
-  const nombreUsuario = req.body.nombre_usuario;
   const email = req.body.email;
-
   try {
     const existeUsuario = await prisma.usuario.findFirst({
       where: {
-        OR: [{ email }],
+        email: email
       },
     });
 
     if (existeUsuario) {
       return res
         .status(409)
-        .set('x-mensaje', 'Ya existe un usuario con ese nickname o email')
+        .set('x-mensaje', 'Ya existe un usuario con ese email')
         .end();
     }
 
@@ -114,7 +112,7 @@ router.get('', async (req, res) => {
   });
   if(usuarios.length == 0){
     return res
-        .status(404)
+        .status(204)
         .set('x-mensaje', 'Sin usuarios')
         .end();
   }
@@ -144,6 +142,18 @@ router.patch('/editar-usuario', async (req, res) => {
       return res
           .status(404)
           .set('x-mensaje', 'Usuario no encontrado')
+          .end();
+  }
+
+  const existeEmail = await prisma.usuario.findUnique({
+    where: { 
+      email: req.body.email
+    }
+  });
+  if (!existeEmail) {
+      return res
+          .status(405)
+          .set('x-mensaje', 'Email ya registrado')
           .end();
   }
 

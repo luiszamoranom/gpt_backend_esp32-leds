@@ -42,6 +42,7 @@ router.get('/asociacion-by-usuario-todas', async (req,res) => {
           pantalla: true
         }
     });
+
     if (pantallas.length>0){
         return res
             .status(200)
@@ -50,7 +51,7 @@ router.get('/asociacion-by-usuario-todas', async (req,res) => {
             .end();
     }else{
         return res
-        .status(404)
+        .status(204)
         .set('x-mensaje', 'No se encontraron pantallas')
         .send(pantallas)
         .end();
@@ -94,7 +95,7 @@ router.get('/asociacion-by-usuario-habilitadas', async (req,res) => {
             .end();
     }else{
         return res
-        .status(404)
+        .status(204)
         .set('x-mensaje', 'No se encontraron pantallas')
         .send(pantallas)
         .end();
@@ -113,7 +114,7 @@ router.post('', async (req,res) => {
     });
     if (!pantalla) {
         return res
-            .status(404)
+            .status(405)
             .set('x-mensaje', 'Pantalla no encontrada')
             .end();
     }
@@ -168,7 +169,7 @@ router.delete('', async (req,res) => {
     });
     if (!pantalla) {
         return res
-            .status(404)
+            .status(405)
             .set('x-mensaje', 'Pantalla no encontrada')
             .end();
     }
@@ -212,7 +213,7 @@ router.delete('', async (req,res) => {
             .set('x-mensaje', 'Pantallas desasociada a usuario')
             .end();
     }
-    return res.status(409).end();
+    return res.status(406).end();
 });
 
 export default router;
