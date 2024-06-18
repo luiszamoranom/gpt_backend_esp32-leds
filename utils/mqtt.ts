@@ -57,12 +57,13 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         
         let job0:any;
         const id_job0 = uuidv4()
-        if (!flag_hora_inicio){
+        if (!flag_hora_inicio || date_start < new Date(Date.now())){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now() + 1000),function() {
                 console.log(new Date(Date.now()),"envia primero:",new_msg)
                 publishMessage(pantalla, new_msg);
             })
-        }else{
+        }
+        else{
             //primero se inicia cuando se indica
             job0 = schedule.scheduleJob(id_job0,date_start,function() {
                 console.log(new Date(Date.now()),"envia primero:",new_msg)
@@ -167,7 +168,7 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
 
         let job0;
         const id_job0 = uuidv4()
-        if (!flag_hora_inicio){
+        if (!flag_hora_inicio || date_start < new Date(Date.now() + 1000)){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now()),function() {
                 console.log(new Date(Date.now()),"envia primero:",new_msg)
                 publishMessage(pantalla, new_msg);
