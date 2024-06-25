@@ -488,4 +488,36 @@ router.delete('/cron-activos', async (req,res) => {
         .end();
 })
 
+router.delete('', async (req,res) => {
+    const pantalla_id = req.query.id as string;
+    const { error } = schemaBuscarPorId.validate({id:Number(pantalla_id)});
+    if (error) {
+        return res.status(400).set('x-mensaje', error.details[0].message).end();
+    }
+   
+    const pantalla = await prisma.pantalla.findUnique({
+        where: { id:  Number(pantalla_id)},
+    });
+    if (!pantalla) {
+        return res
+            .status(404)
+            .set('x-mensaje', 'Pantalla no encontrada')
+            .end();
+    }
+
+    const eliminarPantalla = await prisma.pantalla.delete({
+        where:  { id:  Number(pantalla_id)}
+    });
+    if (eliminarPantalla){
+        return res
+        .status(200)
+        .set('x-mensaje', 'Se elimina la pantalla correctamente')
+        .end();
+    }
+    return res
+        .status(409)
+        .set('x-mensaje', 'No se pudo eliminar')
+        .end();
+})
+
 export default router;
