@@ -333,27 +333,26 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
 
     scheduleMessage(dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
         ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'',pantalla.id)
-    
 
     //si posee fecha final no quedaria por defecto
-    if (fechaFinDate){
-        const pantallaActualizada = await prisma.pantalla.update({
-            where: { id: id },
-            data: { 
-                mensajeActual: mensaje+"&"+String(animacion)
-            },
-        });
-    }
-    //como NO tiene fecha final pasaria un por defecto que simplemente se programa
-    else{
-        const pantallaActualizada = await prisma.pantalla.update({
-            where: { id: id },
-            data: { 
-                mensajeActual: mensaje+"&"+String(animacion),
-                mensajeDefecto: mensaje+"&"+String(animacion)
-            },
-        });
-    }
+    // if (fechaFinDate){
+    //     const pantallaActualizada = await prisma.pantalla.update({
+    //         where: { id: id },
+    //         data: { 
+    //             mensajeActual: mensaje+"&"+String(animacion)
+    //         },
+    //     });
+    // }
+    // //como NO tiene fecha final pasaria un por defecto que simplemente se programa
+    // else{
+    //     const pantallaActualizada = await prisma.pantalla.update({
+    //         where: { id: id },
+    //         data: { 
+    //             mensajeActual: mensaje+"&"+String(animacion),
+    //             mensajeDefecto: mensaje+"&"+String(animacion)
+    //         },
+    //     });
+    // }
    
     return res
         .status(200)
@@ -464,10 +463,10 @@ router.delete('/cron-activos', async (req,res) => {
             usuarioId: usuario.id
         }
     })
-    if (!isAsociado){
+    if (!isAsociado && usuario.rol !== 'administrador'){
         return res
             .status(414)
-            .set('x-mensaje', 'El usuario no tiene permiso para enviar mensajes')
+            .set('x-mensaje', 'El usuario no tiene permiso para eliminar el cron')
             .end();
     }
 
@@ -477,6 +476,17 @@ router.delete('/cron-activos', async (req,res) => {
         }
     });
     if (eliminarCrons){
+        const actualizar = await prisma.pantalla.update({
+            data:{
+                mensajeActual: pantalla.mensajeDefecto
+            },
+            where:{
+                id: pantalla_id
+            }
+        })
+        if (pantalla.mensajeDefecto){
+            publishMessage(pantalla.nombre, pantalla.mensajeDefecto)
+        }
         return res
         .status(200)
         .set('x-mensaje', 'Se eliminaron los crons correctamente')
