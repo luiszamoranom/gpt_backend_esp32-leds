@@ -48,16 +48,20 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         if (fecha_hora_inicio !== '' && fechaInicio){
             date_start = fecha_hora_inicio
             flag_hora_inicio  = true
+            console.log("no tiene hora inicio")
         }
 
         date_end = fechaFin
         if (fecha_hora_fin !== '' && fechaFin){
             date_end = fecha_hora_fin
+            console.log("no tiene hora fin")
         }
         
         let job0:any;
         const id_job0 = uuidv4()
+        console.log("Date start l.62: ",date_start)
         if (!flag_hora_inicio || date_start < new Date(Date.now())){
+            console.log("entro l.64")
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now() + 1000),async function() {
                 //cuando llegue el momento, el mensaje actual cambiará
                 const pantallaActualizada = await prisma.pantalla.update({
@@ -70,6 +74,7 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
             })
         }
         else{
+            console.log("entro l.77")
             //primero se inicia cuando se indica
             job0 = schedule.scheduleJob(id_job0,date_start, async function() {
                 //cuando llegue el momento, el mensaje actual cambiará

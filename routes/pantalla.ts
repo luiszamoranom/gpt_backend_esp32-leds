@@ -293,12 +293,12 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     //fechas
     const fechaInicioDate = new Date(fecha_inicio);
     const inicio_year=fechaInicioDate.getFullYear();
-    const inicio_month=fechaInicioDate.getMonth()+1;
+    const inicio_month=fechaInicioDate.getMonth();
     const inicio_day=fechaInicioDate.getDate();
 
     const fechaFinDate = new Date(fecha_fin);
     const fin_year=fechaFinDate.getFullYear();
-    const fin_month=fechaFinDate.getMonth()+1;
+    const fin_month=fechaFinDate.getMonth();
     const fin_day=fechaFinDate.getDate();
 
     //horas
@@ -330,7 +330,7 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
         }
     }
     
-
+    console.log(`Se pasa a la funcion->fechaInicioDate: ${fechaInicioDate}, trans_date_hora_inicio: ${trans_date_hora_inicio},fechaFinDate: ${fechaFinDate}, trans_date_hora_fin:${trans_date_hora_fin}`)
     scheduleMessage(dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
         ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'',pantalla.id)
 
