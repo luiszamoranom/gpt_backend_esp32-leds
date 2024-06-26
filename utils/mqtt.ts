@@ -57,6 +57,7 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         
         let job0:any;
         const id_job0 = uuidv4()
+        console.log("Hora de inicio que llega a mqtt: ",date_start)
         if (!flag_hora_inicio || date_start < new Date(Date.now())){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now() + 1000),async function() {
                 //cuando llegue el momento, el mensaje actual cambiará
@@ -66,7 +67,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("Se cambia el menaje actual")
                 publishMessage(pantalla, new_msg);
             })
         }
@@ -80,7 +80,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("Se cambia el menaje actual")
                 publishMessage(pantalla, new_msg);
             })
         }
@@ -107,7 +106,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                     mensajeActual: mensaje+"&"+String(animacion)
                 },
             });
-            console.log("Se cambia el menaje actual")
             publishMessage(pantalla, new_msg);
         })
         const save_job1 = await prisma.cron.create({
@@ -135,7 +133,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje_actual
                     },
                 });
-                console.log("Se cambia el menaje actual por el de defecto")
                 publishMessage(pantalla, mensaje_actual);
             });
             const save_job_out = await prisma.cron.create({
@@ -187,8 +184,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                     mensajeActual: mensaje_actual
                 },
             });
-            console.log("Se cambia el menaje actual por el de defecto")
-            console.log("Se acabó el mensaje programado, vuelvo a: ", mensaje_actual)
             publishMessage(pantalla, mensaje_actual);
         });
     }
