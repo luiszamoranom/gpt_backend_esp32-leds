@@ -66,7 +66,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("Se cambia el menaje actual")
                 publishMessage(pantalla, new_msg);
             })
         }
@@ -80,7 +79,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("Se cambia el menaje actual")
                 publishMessage(pantalla, new_msg);
             })
         }
@@ -107,7 +105,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                     mensajeActual: mensaje+"&"+String(animacion)
                 },
             });
-            console.log("Se cambia el menaje actual")
             publishMessage(pantalla, new_msg);
         })
         const save_job1 = await prisma.cron.create({
@@ -135,7 +132,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje_actual
                     },
                 });
-                console.log("Se cambia el menaje actual por el de defecto")
                 publishMessage(pantalla, mensaje_actual);
             });
             const save_job_out = await prisma.cron.create({
@@ -187,8 +183,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                     mensajeActual: mensaje_actual
                 },
             });
-            console.log("Se cambia el menaje actual por el de defecto")
-            console.log("Se acabó el mensaje programado, vuelvo a: ", mensaje_actual)
             publishMessage(pantalla, mensaje_actual);
         });
     }
