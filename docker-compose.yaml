@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "9999:9999"
+    env_file:
+      - .env
   nginx:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
