@@ -62,9 +62,9 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
 
         //si no tiene una hora de inicio deberia entrar aqui, 
         //si la fecha-hora de inicio es menor a la actual deberia entrar tambien
-        console.log(`comapracion ${date_start} <= ${new Date(Date.now() - 1000)}`)
+        console.log(`comapracion ${date_start} <= ${new Date(Date.now() - 1000)}, es: ${date_start.getTime() <= (new Date(Date.now() - 1000).getTime())}`)
         console.log(`!flag_hora_inicio es: ${!flag_hora_inicio}`)
-        if (!flag_hora_inicio || date_start <= new Date(Date.now() - 1000)){
+        if (!flag_hora_inicio || date_start.getTime() <= (new Date(Date.now() - 1000).getTime()) ){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now() + 1000),async function() {
                 //cuando llegue el momento, el mensaje actual cambiará
                 const pantallaActualizada = await prisma.pantalla.update({
@@ -209,7 +209,7 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
 
         let job0;
         const id_job0 = uuidv4()
-        if (!flag_hora_inicio || date_start < new Date(Date.now() + 1000)){
+        if (!flag_hora_inicio || date_start.getTime() <= (new Date(Date.now() - 1000).getTime()) ){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now()), async function() {
                 const pantallaActualizada = await prisma.pantalla.update({
                     where: { id: pantalla_id },
