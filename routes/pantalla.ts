@@ -291,8 +291,6 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     }
     
     //fechas
-    console.log(`llega-> fecha_inicio: ${fecha_inicio}, fecha_fin:${fecha_fin}`)
-    console.log(`llega-> hora_inicio: ${hora_inicio}, hora_fin:${hora_fin}`)
     const fechaInicioDate = new Date(fecha_inicio);
     const inicio_year=fechaInicioDate.getFullYear();
     const inicio_month=fechaInicioDate.getMonth();
@@ -333,29 +331,8 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
         }
     }
     
-    console.log(`Se pasa a la funcion->\nfechaInicioDate: ${fechaInicioDate}, trans_date_hora_inicio: ${trans_date_hora_inicio},\nfechaFinDate: ${fechaFinDate}, trans_date_hora_fin:${trans_date_hora_fin}`)
     scheduleMessage(dias,fechaInicioDate,trans_date_hora_inicio,trans_date_hora_fin,pantalla.nombre
         ,mensaje,animacion,fechaFinDate,pantalla.mensajeDefecto?pantalla.mensajeDefecto:'',pantalla.id)
-
-    //si posee fecha final no quedaria por defecto
-    // if (fechaFinDate){
-    //     const pantallaActualizada = await prisma.pantalla.update({
-    //         where: { id: id },
-    //         data: { 
-    //             mensajeActual: mensaje+"&"+String(animacion)
-    //         },
-    //     });
-    // }
-    // //como NO tiene fecha final pasaria un por defecto que simplemente se programa
-    // else{
-    //     const pantallaActualizada = await prisma.pantalla.update({
-    //         where: { id: id },
-    //         data: { 
-    //             mensajeActual: mensaje+"&"+String(animacion),
-    //             mensajeDefecto: mensaje+"&"+String(animacion)
-    //         },
-    //     });
-    // }
    
     return res
         .status(200)

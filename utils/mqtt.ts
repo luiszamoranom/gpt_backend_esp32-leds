@@ -48,13 +48,11 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         if (fecha_hora_inicio !== '' && fechaInicio){
             date_start = fecha_hora_inicio
             flag_hora_inicio  = true
-            console.log("si tiene hora de inicio")
         }
 
         date_end = fechaFin
         if (fecha_hora_fin !== '' && fechaFin){
             date_end = fecha_hora_fin
-            console.log("si tiene hora de inicio")
         }
         
         let job0:any;
@@ -62,8 +60,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
 
         //si no tiene una hora de inicio deberia entrar aqui, 
         //si la fecha-hora de inicio es menor a la actual deberia entrar tambien
-        console.log(`comapracion ${date_start} <= ${new Date(Date.now() - 1000)}, es: ${date_start.getTime() <= (new Date(Date.now() - 1000).getTime())}`)
-        console.log(`!flag_hora_inicio es: ${!flag_hora_inicio}`)
         if (!flag_hora_inicio || date_start.getTime() <= (new Date(Date.now() - 1000).getTime()) ){
             job0 = schedule.scheduleJob(id_job0,new Date(Date.now() + 1000),async function() {
                 //cuando llegue el momento, el mensaje actual cambiará
@@ -73,12 +69,10 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("envia mensaje de inmediato")
                 publishMessage(pantalla, new_msg);
             })
         }
         else{
-            console.log("entro l.77")
             //primero se inicia cuando se indica
             job0 = schedule.scheduleJob(id_job0,date_start, async function() {
                 //cuando llegue el momento, el mensaje actual cambiará
@@ -88,7 +82,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
                         mensajeActual: mensaje+"&"+String(animacion)
                     },
                 });
-                console.log("envia mensaje hora estipulada")
                 publishMessage(pantalla, new_msg);
             })
         }
@@ -108,7 +101,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         //este sirve para setear cada dia el mensaje
         const id_job1 = uuidv4()
         let job1 = schedule.scheduleJob(id_job1,{start:date_start,rule:`0 8 * * * ${dias_fin}`}, async function() {
-            console.log("Envia cada dia")
             //cuando llegue el momento, el mensaje actual cambiará
             const pantallaActualizada = await prisma.pantalla.update({
                 where: { id: pantalla_id },
@@ -162,7 +154,6 @@ export const scheduleMessage = async (dias:string, fechaInicio:any, fecha_hora_i
         //este sirve para indicar cuando se debe volver al mensaje por defecto
         const id_job_cancel = uuidv4()
         const job_cancel = schedule.scheduleJob(id_job_cancel,date_end, async function() {
-            console.log("Elimina los cron")
             job0.cancel()
             job1.cancel()
             if (job_out){
