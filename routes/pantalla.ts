@@ -290,11 +290,13 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
             .end();
     }
     
+    console.log("fecha de inicio llega con: ",fecha_inicio)
     //fechas
     const fechaInicioDate = new Date(fecha_inicio);
     const inicio_year=fechaInicioDate.getFullYear();
     const inicio_month=fechaInicioDate.getMonth();
     const inicio_day=fechaInicioDate.getDate()+1;
+    console.log("yyyy-mm-dd: ",inicio_year,"-",inicio_month,"-",inicio_day)
 
     const fechaFinDate = new Date(fecha_fin);
     const fin_year=fechaFinDate.getFullYear();
