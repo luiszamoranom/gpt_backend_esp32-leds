@@ -296,12 +296,12 @@ router.patch('/enviar-mensaje-programado', async (req, res) => {
     const fechaInicioDate = new Date(fecha_inicio);
     const inicio_year=fechaInicioDate.getFullYear();
     const inicio_month=fechaInicioDate.getMonth();
-    const inicio_day=fechaInicioDate.getDate();
+    const inicio_day=fechaInicioDate.getDate()+1;
 
     const fechaFinDate = new Date(fecha_fin);
     const fin_year=fechaFinDate.getFullYear();
     const fin_month=fechaFinDate.getMonth();
-    const fin_day=fechaFinDate.getDate();
+    const fin_day=fechaFinDate.getDate()+1;
     
 
     //horas
