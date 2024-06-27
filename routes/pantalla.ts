@@ -422,10 +422,10 @@ router.delete('/cron-activos', async (req,res) => {
             .end();
     }
     
-    const pantalla_id = Number(req.body.pantalla_id);
+    const pantalla_id = req.body.pantalla_id;
     const { error:error2 } = schemaBuscarPorId.validate({id:pantalla_id});
     if (error2) {
-        return res.status(400).set('x-mensaje', error2.details[0].message).end();
+        return res.status(401).set('x-mensaje', error2.details[0].message).end();
     }
     const pantalla = await prisma.pantalla.findUnique({
         where: { id:  pantalla_id},
@@ -437,7 +437,7 @@ router.delete('/cron-activos', async (req,res) => {
             .end();
     }
 
-    const isAsociado = await prisma.usuarioPantalla.findFirst({
+    const isAsociado = await prisma.usuarioPantalla.findMany({
         where:{
             pantallaId: pantalla.id,
             usuarioId: usuario.id
@@ -450,11 +450,24 @@ router.delete('/cron-activos', async (req,res) => {
             .end();
     }
 
+    const cronsAsociados = await prisma.cronUsuario.findMany({
+        where: {
+            pantallaId: pantalla_id
+        }
+    });
     const eliminarCrons = await prisma.cronUsuario.deleteMany({
         where: {
             pantallaId: pantalla_id
         }
     });
+    for (let i = 0;i<cronsAsociados.length;i++){
+        //ahora elimino cada cron
+        const eliminaCron = await prisma.cron.delete({
+            where: {
+                id: cronsAsociados[i].cronId
+            }
+        });
+    }
     if (eliminarCrons){
         const actualizar = await prisma.pantalla.update({
             data:{
