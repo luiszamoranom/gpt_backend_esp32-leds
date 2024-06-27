@@ -422,7 +422,7 @@ router.delete('/cron-activos', async (req,res) => {
             .end();
     }
     
-    const pantalla_id = req.body.pantalla_id;
+    const pantalla_id = Number(req.body.pantalla_id);
     const { error:error2 } = schemaBuscarPorId.validate({id:pantalla_id});
     if (error2) {
         return res.status(401).set('x-mensaje', error2.details[0].message).end();
